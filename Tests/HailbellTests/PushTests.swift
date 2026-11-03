@@ -32,4 +32,9 @@ final class PushTests: XCTestCase {
         XCTAssertNil(HailbellNotification(userInfo: ["aps": ["alert": "Daily verse"]]))
         XCTAssertNil(HailbellNotification(userInfo: ["hb": ["u": "https://example.com"]]))
     }
+
+    func testHandlingAPayloadIgnoresOtherPushes() {
+        XCTAssertFalse(Hailbell.push.handle(userInfo: ["hailbell": ["conversationId": "c1"]]))
+        XCTAssertFalse(Hailbell.push.handle(userInfo: ["aps": ["alert": "Daily verse"]], actionIdentifier: "b1"))
+    }
 }

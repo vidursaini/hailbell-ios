@@ -89,10 +89,20 @@ public final class HailbellPush {
     /// Handles a tap. Returns false for notifications that are not Hailbell pushes.
     @discardableResult
     public func handle(_ response: UNNotificationResponse) -> Bool {
-        guard let note = HailbellNotification(userInfo: response.notification.request.content.userInfo) else { return false }
+        let action = response.actionIdentifier == UNNotificationDefaultActionIdentifier ? nil : response.actionIdentifier
+        return handle(userInfo: response.notification.request.content.userInfo, actionIdentifier: action)
+    }
+
+    /// Handles a tap from its payload, for apps whose push library passes on the notification's
+    /// `userInfo` rather than the `UNNotificationResponse` (React Native, Flutter). `actionIdentifier` is
+    /// the tapped button's id, or nil for a tap on the notification itself. Returns false for
+    /// notifications that are not Hailbell pushes.
+    @discardableResult
+    public func handle(userInfo: [AnyHashable: Any], actionIdentifier: String? = nil) -> Bool {
+        guard let note = HailbellNotification(userInfo: userInfo) else { return false }
         var link = note.url
-        if let button = note.buttons.first(where: { $0.id == response.actionIdentifier }) { link = button.url ?? link }
-        let tapped = HailbellNotification(copying: note, actionId: response.actionIdentifier == UNNotificationDefaultActionIdentifier ? nil : response.actionIdentifier, url: link)
+        if let actionIdentifier, let button = note.buttons.first(where: { $0.id == actionIdentifier }) { link = button.url ?? link }
+        let tapped = HailbellNotification(copying: note, actionId: actionIdentifier, url: link)
         Task { try? await Hailbell.shared.client?.post("/v1/push/opened", body: note.ping, authorized: false) }
         if onOpen?(tapped) == true { return true }
         if let link { UIApplication.shared.open(link) }
@@ -118,7 +128,10 @@ public final class HailbellPush {
         if let out: Out = try? await client.request("POST", "/v1/push/subscribe", body: body) { subscriptionId = out.subscriptionId }
     }
 
-    private static var model: String {
+    /// The model code, e.g. "iPhone17,2". Hailbell turns it into "iPhone 16 Pro Max". The simulator
+    /// reports the Mac's chip, so it uses the model it's simulating.
+    static var model: String {
+        if let simulated = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] { return simulated }
         var info = utsname()
         uname(&info)
         return withUnsafePointer(to: &info.machine) { $0.withMemoryRebound(to: CChar.self, capacity: 1) { String(cString: $0) } }

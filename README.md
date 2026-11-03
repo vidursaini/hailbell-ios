@@ -73,6 +73,7 @@ The full guide, with entry points, signed-in users, offers, App Store privacy an
 | `Hailbell.identify(userId:name:email:identityToken:)` | Who the user is. Only `identityToken`, an HS256 JWT signed with the app's identity secret, links the chat across devices. |
 | `Hailbell.identify(name:email:firebaseIdToken:)` | For apps on Firebase Auth: pass `{ try await Auth.auth().currentUser?.getIDToken() }`. Hailbell verifies the token, uses the Firebase uid as the user id, and links the chat across devices without a backend of your own. Set the Firebase project in the dashboard's push settings. |
 | `Hailbell.asksForNotifications` | Default true. After the first message, the chat offers to turn on notifications if they're off. Set false if your app asks itself. |
+| `Hailbell.darkMode` | Default nil, which follows the phone. Set true for an always-dark app so the chat matches it. |
 | `Hailbell.setMetadata(_:)` | Context shown beside the chat, merged with what you sent before. `appVersion`, `os` and `locale` are sent automatically. Set `superwallUserId` or `revenueCatUserId` to match purchases. |
 | `Hailbell.track(_:properties:)` | A signal shown beside the chat, such as `paywall_decline` or `chat_opened`. |
 | `Hailbell.setPaywallPlacements(_:)` | The placements an offer can open. |
@@ -95,6 +96,7 @@ Hailbell's own push notifications, sent from the dashboard, the REST API or an A
 | `setTags(_:)` | Key/value data for segments and `{{tag.x}}`; `nil` removes a tag. |
 | `setMarketing(_:)` / `optOut()` | Promotional opt-in, or stop all pushes to this device. The marketing choice is saved and sent with every subscribe, so a new token keeps it. New devices start opted out. |
 | `handle(_ response:) -> Bool` | Opens a tapped Hailbell push's link, or hands it to `onOpen`. |
+| `handle(userInfo:actionIdentifier:) -> Bool` | The same, from the payload, for push libraries that pass on `userInfo` rather than the response (React Native, Flutter). |
 | `onOpen: ((HailbellNotification) -> Bool)?` | Route deep links yourself, and return true when handled. |
 | `clearBadge(appGroup:)` | Resets the badge kept by the service extension. |
 

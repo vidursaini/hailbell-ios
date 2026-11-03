@@ -38,6 +38,10 @@ public final class Hailbell: ObservableObject {
     /// so they see the reply. Set to false if your app asks for notification permission itself.
     public static var asksForNotifications = true
 
+    /// Whether the chat is dark. Nil (the default) follows the phone's setting. Set it when your app has
+    /// its own fixed look, so the chat matches the app rather than the system: an always-dark app sets true.
+    public static var darkMode: Bool?
+
     private init() {}
 
     /// Call once at launch, before anything else.
@@ -144,6 +148,8 @@ public final class Hailbell: ObservableObject {
         guard let top = UIApplication.shared.topViewController else { return }
         let host = UIHostingController(rootView: HailbellChatView())
         host.modalPresentationStyle = .pageSheet
+        // The sheet, its grabber and the status bar follow the chat's look too, not only the SwiftUI content.
+        if let dark = Self.darkMode { host.overrideUserInterfaceStyle = dark ? .dark : .light }
         if let sheet = host.sheetPresentationController {
             sheet.prefersGrabberVisible = true
             // Full height straight away: a shorter glass sheet turned solid with a visible jump when the keyboard came up.
@@ -223,7 +229,13 @@ struct Identity {
 /// The chat screen, for apps that want to place it themselves (in a NavigationStack, a tab, a sheet).
 public struct HailbellChatView: View {
     public init() {}
-    public var body: some View { ChatView(model: Hailbell.shared.chat) }
+    public var body: some View {
+        if let dark = Hailbell.darkMode {
+            ChatView(model: Hailbell.shared.chat).environment(\.colorScheme, dark ? .dark : .light)
+        } else {
+            ChatView(model: Hailbell.shared.chat)
+        }
+    }
 }
 
 extension UIApplication {

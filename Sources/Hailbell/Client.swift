@@ -109,7 +109,7 @@ final class Client {
     }
 
     func startSession(identity: Identity) async throws -> Session {
-        var body: [String: Any] = ["appId": appId, "anonymousId": Self.installId, "metadata": deviceMetadata.merging(identity.metadata) { _, new in new }]
+        var body: [String: Any] = ["appId": appId, "anonymousId": Self.installId, "metadata": deviceMetadata.merging(identity.metadata) { _, new in new }, "timeZone": TimeZone.current.identifier]
         if let v = identity.userId { body["userId"] = v }
         if let v = identity.name { body["name"] = v }
         if let v = identity.email { body["email"] = v }
@@ -223,6 +223,7 @@ final class Client {
             "appVersion": "\(info["CFBundleShortVersionString"] ?? "?") (\(info["CFBundleVersion"] ?? "?"))",
             "os": "iOS \(ProcessInfo.processInfo.operatingSystemVersionString)",
             "locale": Locale.current.identifier,
+            "device": HailbellPush.model,
         ]
     }
 
