@@ -136,11 +136,16 @@ public final class Hailbell: ObservableObject {
         return true
     }
 
-    /// True when the app was signed with a development profile. App Store builds carry no profile.
+    /// True when the app was signed with a development profile, or runs in the Simulator (which gets
+    /// sandbox tokens but carries no profile). App Store builds carry no profile.
     static let apnsSandbox: Bool = {
+        #if targetEnvironment(simulator)
+        return true
+        #else
         guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
               let data = try? Data(contentsOf: url), let text = String(data: data, encoding: .isoLatin1) else { return false }
         return text.range(of: #"<key>aps-environment</key>\s*<string>development</string>"#, options: .regularExpression) != nil
+        #endif
     }()
 
     /// Presents the chat as a sheet over the top-most view controller.
