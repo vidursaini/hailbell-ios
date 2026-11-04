@@ -148,9 +148,15 @@ public final class Hailbell: ObservableObject {
         #endif
     }()
 
-    /// Presents the chat as a sheet over the top-most view controller.
+    /// Presents the chat as a sheet over the top-most view controller. With the chat already open,
+    /// for example a reply tapped while the app was in the background with the chat on screen, it
+    /// catches that chat up instead of stacking a second one on top.
     public func open() {
-        guard let top = UIApplication.shared.topViewController else { return }
+        if chat.isOnScreen {
+            chat.catchUp()
+            return
+        }
+        guard let top = topViewController() else { return }
         let host = UIHostingController(rootView: HailbellChatView())
         host.modalPresentationStyle = .pageSheet
         // The sheet, its grabber and the status bar follow the chat's look too, not only the SwiftUI content.
@@ -160,8 +166,14 @@ public final class Hailbell: ObservableObject {
             // Full height straight away: a shorter glass sheet turned solid with a visible jump when the keyboard came up.
             sheet.detents = [.large()]
         }
-        top.present(host, animated: true)
+        present(host, top)
     }
+
+    /// Shows the chat sheet. Tests swap it to count presentations without a window.
+    var present: (UIViewController, UIViewController) -> Void = { sheet, top in top.present(sheet, animated: true) }
+
+    /// Where the sheet goes. Tests swap it, since their host has no window.
+    var topViewController: () -> UIViewController? = { UIApplication.shared.topViewController }
 
     // MARK: internal
 

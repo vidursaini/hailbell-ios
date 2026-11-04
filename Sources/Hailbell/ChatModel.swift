@@ -219,11 +219,18 @@ final class ChatModel: ObservableObject {
     /// in the chat and sends replies as pushes. iOS suspends the app without closing it otherwise.
     func backgrounded() { disconnect() }
 
-    /// Back in front with the chat on screen: catch up on what arrived meanwhile, then reconnect.
-    func foregrounded() {
+    /// The chat is on screen, in the sheet `Hailbell.open()` presents or wherever the app placed
+    /// `HailbellChatView`. Stays true while the app is in the background with the chat open.
+    var isOnScreen: Bool { visible }
+
+    /// Fetches what arrived while the chat wasn't listening, reconnects and marks it read.
+    func catchUp() {
         guard visible else { return }
         Task { await loadHistory(); connect(); markRead() }
     }
+
+    /// Back in front with the chat on screen: catch up on what arrived meanwhile, then reconnect.
+    func foregrounded() { catchUp() }
 
     private func markRead() {
         guard visible, let client = owner?.client else { return }
