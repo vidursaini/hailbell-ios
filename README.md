@@ -69,7 +69,7 @@ The full guide, with entry points, signed-in users, offers, App Store privacy an
 | `Hailbell.shared.open()` | Presents the chat as a full-height sheet over the top-most view controller. |
 | `HailbellChatView()` | The chat as a SwiftUI view, to place it yourself. |
 | `Hailbell.shared.unreadCount` | `@Published` replies not yet read; use it for a badge. |
-| `Hailbell.teamPhoto: UIImage?` | A photo bundled in the app for the chat header. Without it, the dashboard photo loads. |
+| `Hailbell.teamPhoto: UIImage?` | Deprecated: set the photo in the dashboard. A bundled photo shows only until the chat hears from Hailbell, and never once the dashboard signs replies as the team, turns photos off or sets a photo for this app. |
 | `Hailbell.identify(userId:name:email:identityToken:)` | Who the user is. Only `identityToken`, an HS256 JWT signed with the app's identity secret, links the chat across devices. |
 | `Hailbell.identify(name:email:firebaseIdToken:)` | For apps on Firebase Auth: pass `{ try await Auth.auth().currentUser?.getIDToken() }`. Hailbell verifies the token, uses the Firebase uid as the user id, and links the chat across devices without a backend of your own. Set the Firebase project in the dashboard's push settings. |
 | `Hailbell.asksForNotifications` | Default true. After the first message, the chat offers to turn on notifications if they're off. Set false if your app asks itself. |
