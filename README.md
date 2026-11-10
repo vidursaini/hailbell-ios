@@ -82,8 +82,23 @@ The full guide, with entry points, signed-in users, offers, App Store privacy an
 | `Hailbell.handleNotification(_:) -> Bool` | Opens the chat for a tapped reply push (`userInfo["hailbell"]`). |
 | `Hailbell.reset()` | On sign-out: clears the identity and the cached chat. |
 | `Hailbell.deleteData() async throws` | Deletes the user's chat, images and details from Hailbell. |
+| `Hailbell.shakeToReport` | Default false. When true, shaking the phone opens the report screen. |
+| `Hailbell.trackScreen(_:)` | Notes the screen the user is on. A bug report carries the last 10. |
+| `Hailbell.reportBug()` | Opens the report screen, for a "Report a problem" button. |
 
-`Message`, `Attachment` and `Card` are public, for apps that read the conversation.
+`Message`, `Attachment`, `Card` and `ReportDetails` are public, for apps that read the conversation.
+
+## Bug reports
+
+```swift
+Hailbell.shakeToReport = true          // shake the phone to report a problem
+Hailbell.trackScreen("Settings")       // call as screens appear
+Hailbell.reportBug()                   // or open it from a "Report a problem" button
+```
+
+The report screen opens with a screenshot of what was on screen. The user can mark it up with a red pen, remove it, and say what went wrong. Send posts it with the app version and build, the device model, the iOS version, the locale and the last 10 screens from `trackScreen`.
+
+It lands in the normal chat inbox as a message from that user, tagged as a bug report, and the dashboard's Bugs filter lists only reports. Replies go back to the chat like any other. There is no session replay: nothing is captured or sent until the user taps Send, and the screen names stay in memory until then.
 
 ## Hailbell.push
 
@@ -128,6 +143,7 @@ It adds images and buttons, handles badge increments and sends delivery receipts
 | `Client.swift` | HTTP and WebSocket client, install id in the Keychain, public models |
 | `ChatModel.swift` | Chat state: cache, paging, sending, uploads, ticks, typing, presence, cards |
 | `ChatView.swift`, `MessageRow.swift`, `Composer.swift` | The chat UI: header, bubbles and cards, composer |
+| `BugReport.swift` | Shake to report, the report screen and the screenshot markup |
 | `ChatTheme.swift`, `Glass.swift` | Colours from the dashboard's Chat design, Liquid Glass on iOS 26 with fallbacks |
 | `L10n.swift` | The chat's own words in 14 languages |
 | `Push.swift` | `Hailbell.push` |
