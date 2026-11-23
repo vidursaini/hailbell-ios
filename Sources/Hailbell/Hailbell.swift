@@ -126,6 +126,47 @@ public final class Hailbell: ObservableObject {
         shared.presentReport()
     }
 
+    /// Keeps a line from your app's own logging, such as "Restore tapped" or "Receipt check failed: 422".
+    /// The last 50 lines stay in memory on the phone and go out only with a bug report the user chooses
+    /// to send. Passwords, tokens, API keys and Bearer values in the line become "[redacted]", and
+    /// addresses lose their query strings. Safe to call from any thread.
+    public nonisolated static func log(_ message: String) {
+        ReportLog.shared.log(message)
+    }
+
+    /// Notes a network request your app made, so a bug report shows the ones that failed. Only failures
+    /// are kept (no answer, or a status of 400 or more), the last 10, in memory on the phone. Never the
+    /// body or headers: the method, the address without its query string (secret-looking parts such as
+    /// emails, tokens and long ids become ":redacted"), the status and the time. Call it after a
+    /// URLSession request:
+    ///
+    ///     do {
+    ///         let (data, response) = try await URLSession.shared.data(for: request)
+    ///         Hailbell.logRequest(request, response: response, error: nil)
+    ///     } catch {
+    ///         Hailbell.logRequest(request, response: nil, error: error)
+    ///         throw error
+    ///     }
+    public nonisolated static func logRequest(_ request: URLRequest, response: URLResponse?, error: Error?) {
+        if let error = error as? URLError, error.code == .cancelled { return }
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        logRequest(method: request.httpMethod ?? "GET", url: request.url?.absoluteString ?? "", status: status)
+    }
+
+    /// The same, for requests made another way. `status` 0 means there was no answer (offline, timed out).
+    public nonisolated static func logRequest(method: String, url: URL?, status: Int) {
+        logRequest(method: method, url: url?.absoluteString ?? "", status: status)
+    }
+
+    /// The same, with the address as text.
+    public nonisolated static func logRequest(method: String, url: String, status: Int) {
+        ReportLog.shared.request(method: method, url: url, status: status)
+    }
+
+    /// This SDK's version. Sent with each session, so Hailbell knows the chat can show the button of a
+    /// bug report request.
+    public nonisolated static let sdkVersion = "1.2.0"
+
     /// Records a signal such as "paywall_decline". Signals show next to the chat and drive nudges later.
     public static func track(_ event: String, properties: [String: String] = [:]) {
         Task { try? await shared.client?.track(event, properties: properties) }
@@ -208,10 +249,12 @@ public final class Hailbell: ObservableObject {
     /// Takes the screenshot for a report. Tests swap it, since their host has no window.
     var captureScreen: () -> UIImage? = { UIApplication.shared.keyWindow?.hailbellSnapshot() }
 
-    /// Screenshots what is on screen, then presents the report screen over everything else.
-    func presentReport() {
+    /// Screenshots what is on screen, then presents the report screen over everything else. From a bug
+    /// report request in the chat there is no screenshot (it would show the chat); the user can add one
+    /// from their photos.
+    func presentReport(screenshot capture: Bool = true) {
         if let sheet = reportSheet, !sheet.dismissed { return }
-        let screenshot = captureScreen()
+        let screenshot = capture ? captureScreen() : nil
         guard let top = topViewController() else { return }
         let host = ReportHostingController(rootView: BugReportScreen(model: chat, screenshot: screenshot))
         host.modalPresentationStyle = .pageSheet
@@ -228,15 +271,18 @@ public final class Hailbell: ObservableObject {
     func reportDetails() -> [String: Any] {
         Self.reportDetails(info: Bundle.main.infoDictionary ?? [:], device: HailbellPush.model,
                            systemVersion: UIDevice.current.systemVersion, locale: Locale.current.identifier,
-                           screens: screens.names)
+                           screens: screens.names, log: ReportLog.shared.snapshot())
     }
 
     /// The body's `report` object. Pure, so tests can check it without a device.
     nonisolated static func reportDetails(info: [String: Any], device: String, systemVersion: String,
-                                          locale: String, screens: [String]) -> [String: Any] {
+                                          locale: String, screens: [String],
+                                          log: (logs: [[String: Any]], requests: [[String: Any]]) = ([], [])) -> [String: Any] {
         var report: [String: Any] = ["device": device, "os": "iOS \(systemVersion)", "locale": locale, "screens": screens]
         if let v = info["CFBundleShortVersionString"] as? String { report["appVersion"] = v }
         if let v = info["CFBundleVersion"] as? String { report["build"] = v }
+        if !log.logs.isEmpty { report["logs"] = log.logs }
+        if !log.requests.isEmpty { report["requests"] = log.requests }
         return report
     }
 

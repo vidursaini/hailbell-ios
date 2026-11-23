@@ -160,9 +160,10 @@ public struct Attachment: Codable, Equatable {
     public let height: Double?
 }
 
-/// A message from you with a button: a review request (opens `url`) or an offer (opens `placement`).
+/// A message from you with a button: a review request (opens `url`), an offer (opens `placement`) or
+/// a bug report request (opens the report screen).
 public struct Card: Codable, Equatable {
-    public let type: String            // "review" | "offer"
+    public let type: String            // "review" | "offer" | "report"
     public let button: String
     public let url: String?
     public let placement: String?
@@ -306,6 +307,7 @@ final class Client {
             "os": "iOS \(ProcessInfo.processInfo.operatingSystemVersionString)",
             "locale": Locale.current.identifier,
             "device": HailbellPush.model,
+            "hailbellSdk": Hailbell.sdkVersion,
         ]
     }
 

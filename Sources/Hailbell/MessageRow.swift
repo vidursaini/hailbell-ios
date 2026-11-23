@@ -143,7 +143,8 @@ struct Bubble: View {
 }
 
 /// Your message with its button inside the bubble, like an iMessage app card: the text, then a
-/// full-width pill with a gift for an offer or a star for a review, and a chevron for where it goes.
+/// full-width pill with a gift for an offer, a ladybug for a bug report request or a star for a
+/// review, and a chevron for where it goes.
 /// "Not now" sits under the button until they choose.
 private struct CardBubble: View {
     let text: String
@@ -159,10 +160,10 @@ private struct CardBubble: View {
             }
             Button(action: tap) {
                 HStack(spacing: 10) {
-                    Image(systemName: card.type == "offer" ? "gift.fill" : "star.fill").font(.system(size: 17, weight: .semibold))
+                    Image(systemName: card.type == "offer" ? "gift.fill" : card.type == "report" ? "ladybug.fill" : "star.fill").font(.system(size: 17, weight: .semibold))
                     Text(card.button).font(.body.weight(.semibold)).lineLimit(2).multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
-                    Image(systemName: card.placement != nil ? "chevron.right" : "arrow.up.right").font(.system(size: 14, weight: .bold))
+                    Image(systemName: card.placement != nil || card.type == "report" ? "chevron.right" : "arrow.up.right").font(.system(size: 14, weight: .bold))
                 }
                 .padding(.horizontal, 18)
                 .frame(minHeight: 48)
@@ -185,7 +186,9 @@ private struct CardBubble: View {
 
     private func tap() {
         act("tapped")
-        if let placement = card.placement {
+        if card.type == "report" {
+            Hailbell.shared.presentReport(screenshot: false)
+        } else if let placement = card.placement {
             Hailbell.onPaywall?(placement) { act("purchased") }
         } else if let url = card.url.flatMap(URL.init(string:)) {
             openURL(url)
@@ -213,8 +216,9 @@ struct CardStatus: View {
 }
 
 extension Card {
-    /// Cards open a paywall placement or an https link; anything else shows as a plain message.
-    var isShown: Bool { placement != nil || url.flatMap(URL.init(string:))?.scheme == "https" }
+    /// Cards open a paywall placement, an https link or the bug report screen; anything else shows as
+    /// a plain message.
+    var isShown: Bool { type == "report" || placement != nil || url.flatMap(URL.init(string:))?.scheme == "https" }
 }
 
 extension Color {

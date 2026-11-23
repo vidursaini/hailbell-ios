@@ -1,4 +1,5 @@
 import ObjectiveC
+import PhotosUI
 import SwiftUI
 import UIKit
 
@@ -85,6 +86,7 @@ struct BugReportView: View {
     @State private var sending = false
     @State private var error: String?
     @State private var markingUp = false
+    @State private var pick: PhotosPickerItem?
     @FocusState private var focused: Bool
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var scheme
@@ -109,7 +111,27 @@ struct BugReportView: View {
                 } footer: {
                     Text(L10n.text("reportNote"))
                 }
-                if let screenshot { screenshotSection(screenshot) }
+                if let screenshot {
+                    screenshotSection(screenshot)
+                } else {
+                    // Opened from a bug report request in the chat, or the screenshot was removed: the
+                    // user can pick one they took earlier.
+                    Section {
+                        PhotosPicker(selection: $pick, matching: .images) {
+                            Label(L10n.text("addScreenshot"), systemImage: "photo.badge.plus")
+                        }
+                        .disabled(sending)
+                    }
+                }
+            }
+            .onChange(of: pick) { item in
+                guard let item else { return }
+                pick = nil
+                Task {
+                    if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) {
+                        withAnimation { screenshot = image }
+                    }
+                }
             }
             .navigationTitle(L10n.text("reportTitle"))
             .navigationBarTitleDisplayMode(.inline)

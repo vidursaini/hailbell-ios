@@ -15,11 +15,11 @@ In Xcode, choose **File > Add Package Dependencies...**, enter
 https://github.com/vidursaini/hailbell-ios
 ```
 
-and pick **Up to Next Major Version** from `1.0.0`. Or in `Package.swift`:
+and pick **Up to Next Major Version** from `1.2.0`. Or in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/vidursaini/hailbell-ios", from: "1.0.0"),
+    .package(url: "https://github.com/vidursaini/hailbell-ios", from: "1.2.0"),
 ],
 targets: [
     .target(name: "MyApp", dependencies: [.product(name: "Hailbell", package: "hailbell-ios")]),
@@ -85,6 +85,9 @@ The full guide, with entry points, signed-in users, offers, App Store privacy an
 | `Hailbell.shakeToReport` | Default false. When true, shaking the phone opens the report screen. |
 | `Hailbell.trackScreen(_:)` | Notes the screen the user is on. A bug report carries the last 10. |
 | `Hailbell.reportBug()` | Opens the report screen, for a "Report a problem" button. |
+| `Hailbell.log(_:)` | 1.2.0. Keeps a line for the next bug report. The last 50 stay in memory on the phone. |
+| `Hailbell.logRequest(_:response:error:)` | 1.2.0. Call after a URLSession call; records it only if it failed (status 400 or more, or no answer). A bug report carries the last 10. |
+| `Hailbell.logRequest(method:url:status:)` | 1.2.0. Records a failed request by hand. |
 
 `Message`, `Attachment`, `Card` and `ReportDetails` are public, for apps that read the conversation.
 
@@ -99,6 +102,30 @@ Hailbell.reportBug()                   // or open it from a "Report a problem" b
 The report screen opens with a screenshot of what was on screen. The user can mark it up with a red pen, remove it, and say what went wrong. Send posts it with the app version and build, the device model, the iOS version, the locale and the last 10 screens from `trackScreen`.
 
 It lands in the normal chat inbox as a message from that user, tagged as a bug report, and the dashboard's Bugs filter lists only reports. Replies go back to the chat like any other. There is no session replay: nothing is captured or sent until the user taps Send, and the screen names stay in memory until then.
+
+### The app's log and failed requests (1.2.0)
+
+```swift
+Hailbell.log("Restore tapped")                                   // a line you want in the next report
+
+do {
+    let (data, response) = try await URLSession.shared.data(for: request)
+    Hailbell.logRequest(request, response: response, error: nil) // kept only if it failed
+} catch {
+    Hailbell.logRequest(request, response: nil, error: error)    // no answer: offline, timed out
+    throw error
+}
+
+Hailbell.logRequest(method: "POST", url: url, status: 422)       // or by hand
+```
+
+Both are opt-in. The SDK doesn't read the console or watch the network by itself. It keeps the last 50 log lines and the last 10 failed requests in memory, and sends them only with a bug report the user chooses to send. A failed request is one with status 400 or more, or no answer, and it keeps the method, address, status code and time, never bodies or headers. Before anything leaves the phone, addresses lose their query strings and secret-looking parts (emails, tokens, keys, long ids, JWTs, phone numbers) become `:redacted`, and passwords, tokens, API keys and Bearer values in log lines become `[redacted]`. Hailbell's server applies the same rules again.
+
+The dashboard shows them under the report, next to the customer's plan and purchases. The customer's own chat doesn't show them.
+
+### Asking for a report
+
+A teammate can ask for a report from the dashboard (**Ask for bug report**), with `!bugreport` in Discord or Telegram, or with the **Ask for a bug report** button in Slack. The AI can add the same request to its reply when a customer describes a bug. In SDK 1.2.0 and later the message has a **Send a bug report** button that opens the report screen, where the user can also add a screenshot from their photos. Older SDKs show the message as text.
 
 ## Hailbell.push
 

@@ -102,6 +102,12 @@ final class BugReportTests: XCTestCase {
         XCTAssertEqual(presented.count, 1, "a second report screen was stacked")
     }
 
+    func testABugReportRequestOpensTheReportWithoutAScreenshotOfTheChat() throws {
+        Hailbell.shared.presentReport(screenshot: false)
+        let host = try XCTUnwrap(presented.first as? ReportHostingController)
+        XCTAssertNil(host.rootView.screenshot)
+    }
+
     func testShakingTheWindowOpensTheReportOnlyWhenTurnedOn() {
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
         Hailbell.shakeToReport = true
