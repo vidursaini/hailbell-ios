@@ -27,25 +27,35 @@ struct ChatView: View {
                         }
                         ForEach(model.messages) { m in
                             if startsDay(m) { DayChip(date: m.date, theme: theme) }
-                            let photo = model.photo(for: m)
-                            MessageRow(message: m, caption: caption(m), photo: photo,
-                                       bundledPhoto: model.bundledPhoto(for: m),
-                                       showsFace: (m.author == "agent" || m.author == "bot") && model.endsRun(m), baseURL: model.baseURL,
-                                       theme: theme, quoteName: m.replyTo.map(model.replyName),
-                                       canReply: model.canReply(to: m), onReply: { model.reply(to: m) },
-                                       onQuote: { jump(to: $0, proxy) }, onCard: { model.cardAction(m, $0) })
-                                .background {
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .fill(theme.accent.opacity(highlighted == m.id ? 0.16 : 0))
-                                        .padding(.horizontal, -8).padding(.vertical, -3)
-                                        .allowsHitTesting(false)
+                            if let expect = m.expectCard {
+                                // Out of date once the team has replied ("offline right now"), so it goes, as on the web.
+                                if !model.teamReplied(after: m) {
+                                ReplyTimeCard(expect: expect, notify: model.expectNotify(for: m), theme: theme,
+                                              createdAt: m.date, onNotify: { model.notifyAsk.allowFromCard() })
+                                    .onAppear { if expect.notify { model.notifyAsk.refreshPermission() } }
+                                    .id(m.id)
                                 }
-                                .id(m.id)
-                            if let delivery = model.delivery(of: m) { Ticks(delivery: delivery) }
-                            // Thanks only for a real purchase; a tap may have closed the paywall, and iOS never says
-                            // whether a review was left.
-                            if let card = m.card, card.isShown, card.state == "purchased" {
-                                CardStatus(card: card)
+                            } else {
+                                let photo = model.photo(for: m)
+                                MessageRow(message: m, caption: caption(m), photo: photo,
+                                           bundledPhoto: model.bundledPhoto(for: m),
+                                           showsFace: (m.author == "agent" || m.author == "bot") && model.endsRun(m), baseURL: model.baseURL,
+                                           theme: theme, quoteName: m.replyTo.map(model.replyName),
+                                           canReply: model.canReply(to: m), onReply: { model.reply(to: m) },
+                                           onQuote: { jump(to: $0, proxy) }, onCard: { model.cardAction(m, $0) })
+                                    .background {
+                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                            .fill(theme.accent.opacity(highlighted == m.id ? 0.16 : 0))
+                                            .padding(.horizontal, -8).padding(.vertical, -3)
+                                            .allowsHitTesting(false)
+                                    }
+                                    .id(m.id)
+                                if let delivery = model.delivery(of: m) { Ticks(delivery: delivery) }
+                                // Thanks only for a real purchase; a tap may have closed the paywall, and iOS never says
+                                // whether a review was left.
+                                if let card = m.card, card.isShown, card.state == "purchased" {
+                                    CardStatus(card: card)
+                                }
                             }
                         }
                         if model.agentTyping {
@@ -57,7 +67,8 @@ struct ChatView: View {
                                 .id(p.id)
                                 .onTapGesture { if p.failed { model.retry(p) } }
                         }
-                        NotifyAskRow(ask: model.notifyAsk, theme: theme)
+                        // The reply time card's own button asks instead, while it shows one.
+                        if !model.cardOffersNotify { NotifyAskRow(ask: model.notifyAsk, theme: theme) }
                         Color.clear.frame(height: 1).id(Self.bottom)
                     }
                     .padding(.horizontal, 12)

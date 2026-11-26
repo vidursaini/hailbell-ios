@@ -73,8 +73,18 @@ public struct Message: Codable, Identifiable, Equatable {
     /// The message this one answers, as it was when the reply was sent. Nil on ordinary messages and
     /// on servers that predate replies.
     public let replyTo: ReplyTo?
+    /// The reply time card's details on a "system" message: when the team is likely to reply. Nil on
+    /// ordinary messages, on servers that predate the card, and when the SDK can't read it (the
+    /// message then shows its `body` as a normal bubble).
+    public let expect: Expect?
 
     var isMine: Bool { author == "user" }
+
+    /// The reply time card to draw instead of a bubble, when this message is one this SDK understands.
+    var expectCard: Expect? {
+        guard author == "system", let expect, expect.isShown else { return nil }
+        return expect
+    }
     var date: Date { Date(timeIntervalSince1970: createdAt / 1000) }
 
     public init(from decoder: Decoder) throws {
@@ -91,6 +101,62 @@ public struct Message: Codable, Identifiable, Equatable {
         report = try c.decodeIfPresent(ReportDetails.self, forKey: .report)
         // A quote the SDK can't read must not lose the message itself.
         replyTo = (try? c.decodeIfPresent(ReplyTo.self, forKey: .replyTo)) ?? nil
+        // Same for the reply time card: a malformed one leaves the plain text.
+        expect = (try? c.decodeIfPresent(Expect.self, forKey: .expect)) ?? nil
+    }
+}
+
+/// When the customer can expect a reply, sent with the system message the server adds when the AI
+/// hands a chat to a team that isn't around (worker/src/reply-time.js). `kind` is "back" (offline
+/// until `backAt`), "typical" (usually replies within `hours`) or "soon".
+public struct Expect: Codable, Equatable {
+    public let kind: String
+    /// Who replies, e.g. "Vidur".
+    public let name: String
+    /// When the team is back, in ms since 1970 (kind "back").
+    public let backAt: Double?
+    /// The usual wait in hours (kind "typical").
+    public let hours: Int?
+    /// Whether to offer a notification when they reply.
+    public let notify: Bool
+    /// The owner's time zone and country, for "It's 2:22 AM for Vidur in India." Both or neither.
+    public let ownerZone: String?
+    public let ownerCountry: String?
+
+    init(kind: String, name: String, backAt: Double? = nil, hours: Int? = nil, notify: Bool = false,
+         ownerZone: String? = nil, ownerCountry: String? = nil) {
+        self.kind = kind
+        self.name = name
+        self.backAt = backAt
+        self.hours = hours
+        self.notify = notify
+        self.ownerZone = ownerZone
+        self.ownerCountry = ownerCountry
+    }
+
+    /// Lenient: only `kind` and `name` must be strings. A field of the wrong type is dropped rather
+    /// than failing the whole card.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        kind = try c.decode(String.self, forKey: .kind)
+        name = try c.decode(String.self, forKey: .name)
+        backAt = (try? c.decodeIfPresent(Double.self, forKey: .backAt)) ?? nil
+        hours = ((try? c.decodeIfPresent(Double.self, forKey: .hours)) ?? nil).flatMap { $0.isFinite ? Int($0.rounded()) : nil }
+        notify = ((try? c.decodeIfPresent(Bool.self, forKey: .notify)) ?? nil) ?? false
+        ownerZone = (try? c.decodeIfPresent(String.self, forKey: .ownerZone)) ?? nil
+        ownerCountry = (try? c.decodeIfPresent(String.self, forKey: .ownerCountry)) ?? nil
+    }
+
+    /// Whether this SDK can draw it: a known kind with the details that kind needs. Anything else
+    /// (a kind added later, a missing time) shows as the plain bubble.
+    var isShown: Bool {
+        guard !name.trimmingCharacters(in: .whitespaces).isEmpty else { return false }
+        switch kind {
+        case "back": return backAt?.isFinite == true
+        case "typical": return hours != nil
+        case "soon": return true
+        default: return false
+        }
     }
 }
 

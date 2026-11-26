@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import UIKit
 
@@ -43,9 +44,12 @@ final class ChatModel: ObservableObject {
     private var typingSentAt = Date.distantPast
     private var visible = false
     private var conversationId: String?
+    private var askChanges: AnyCancellable?
 
     func attach(to owner: Hailbell) {
         self.owner = owner
+        // The reply time card reads the ask's permission, so the chat redraws when it changes.
+        askChanges = notifyAsk.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
         restore()
         let center = NotificationCenter.default
         center.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
@@ -308,7 +312,31 @@ final class ChatModel: ObservableObject {
     }
 
     /// Back in front with the chat on screen: catch up on what arrived meanwhile, then reconnect.
-    func foregrounded() { catchUp() }
+    func foregrounded() {
+        // Maybe back from Settings with notifications turned on.
+        if cardOffersNotify { notifyAsk.refreshPermission() }
+        catchUp()
+    }
+
+    // MARK: reply time card
+
+    /// Whether someone on the team wrote after this message: the reply the card promised arrived.
+    func teamReplied(after m: Message) -> Bool {
+        guard let i = messages.firstIndex(where: { $0.id == m.id }) else { return false }
+        return messages[(i + 1)...].contains { $0.author == "agent" }
+    }
+
+    /// What the card's notify part shows for this message right now.
+    func expectNotify(for m: Message) -> ReplyTime.Notify {
+        guard let e = m.expectCard else { return .none }
+        return ReplyTime.notify(offered: e.notify, teamReplied: teamReplied(after: m), permission: notifyAsk.permission)
+    }
+
+    /// True while a reply time card offers notifications, so the separate ask stays hidden.
+    /// Counted before the permission is known, so the ask never flashes in first.
+    var cardOffersNotify: Bool {
+        messages.contains { m in m.expectCard?.notify == true && !teamReplied(after: m) }
+    }
 
     private func markRead() {
         guard visible, let client = owner?.client else { return }

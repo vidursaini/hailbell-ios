@@ -2,6 +2,8 @@
 
 In-app support chat and push notifications for iOS 16 and later. Customers write from a native chat screen inside your app; you answer from the [Hailbell](https://hailbell.com) dashboard, Discord or Telegram, and your reply reaches them live or as a push notification.
 
+When the support AI hands a chat to your team while nobody is around, the chat shows a reply time card saying when to expect a reply, in the customer's own time, with a button to turn on notifications. The card arrived in 1.3.0; earlier versions show the same words as a normal message.
+
 This package has two libraries:
 
 - **Hailbell**: the chat screen, identity, signals and push. Add it to the app.
@@ -59,6 +61,8 @@ func application(_ app: UIApplication, didRegisterForRemoteNotificationsWithDevi
 
 4. On sign-out call `Hailbell.reset()`. When a user deletes their account, call `try await Hailbell.deleteData()`.
 
+When the AI hands a chat to you while nobody is around, the chat shows a reply time card instead of a plain message: "Vidur is offline right now. Usually back by **11:30 PM tonight**, your time.", worked out on the phone in the customer's own time zone and clock format, with a "Notify me when Vidur replies" button that turns on notifications. Turn it on or off in the dashboard's AI replies settings. Older SDK versions show the same words as a normal message.
+
 The full guide, with entry points, signed-in users, offers, App Store privacy answers and a checklist, is at [hailbell.com/docs](https://hailbell.com/docs). AI coding agents can install the Hailbell skill from `https://hailbell.com/skills/hailbell/SKILL.md`.
 
 ## Hailbell
@@ -72,7 +76,7 @@ The full guide, with entry points, signed-in users, offers, App Store privacy an
 | `Hailbell.teamPhoto: UIImage?` | Deprecated: set the photo in the dashboard. A bundled photo shows only until the chat hears from Hailbell, and never once the dashboard signs replies as the team, turns photos off or sets a photo for this app. |
 | `Hailbell.identify(userId:name:email:identityToken:)` | Who the user is. Only `identityToken`, an HS256 JWT signed with the app's identity secret, links the chat across devices. |
 | `Hailbell.identify(name:email:firebaseIdToken:)` | For apps on Firebase Auth: pass `{ try await Auth.auth().currentUser?.getIDToken() }`. Hailbell verifies the token, uses the Firebase uid as the user id, and links the chat across devices without a backend of your own. Set the Firebase project in the dashboard's push settings. |
-| `Hailbell.asksForNotifications` | Default true. After the first message, the chat offers to turn on notifications if they're off. Set false if your app asks itself. |
+| `Hailbell.asksForNotifications` | Default true. After the first message, the chat offers to turn on notifications if they're off. Set false if your app asks itself. The reply time card's "Notify me" button shows either way, since the customer taps it. |
 | `Hailbell.darkMode` | Default nil, which follows the phone. Set true for an always-dark app so the chat matches it. |
 | `Hailbell.setMetadata(_:)` | Context shown beside the chat, merged with what you sent before. `appVersion`, `os` and `locale` are sent automatically. Set `superwallUserId` or `revenueCatUserId` to match purchases. |
 | `Hailbell.track(_:properties:)` | A signal shown beside the chat, such as `paywall_decline` or `chat_opened`. |

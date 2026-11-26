@@ -9,6 +9,8 @@ final class NotifyAsk: ObservableObject {
     enum State { case hidden, ask, settings }
 
     @Published private(set) var state: State = .hidden
+    /// The app's notification permission, for the reply time card's button. Nil until first read.
+    @Published private(set) var permission: UNAuthorizationStatus?
 
     private var answered: Bool {
         get { UserDefaults.standard.bool(forKey: "hailbell.notifyAsked") }
@@ -33,7 +35,30 @@ final class NotifyAsk: ObservableObject {
         if wasDenied {
             if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
         } else {
-            Task { await HailbellPush.shared.requestPermission() }
+            Task {
+                _ = await HailbellPush.shared.requestPermission()
+                permission = await HailbellPush.shared.permission
+            }
+        }
+    }
+
+    /// Reads the permission again: when the chat opens and when the app comes back (maybe from Settings).
+    func refreshPermission() {
+        Task { permission = await HailbellPush.shared.permission }
+    }
+
+    /// The reply time card's button: asks for permission (or opens Settings once it was denied).
+    /// It answers this ask too, so the separate ask never shows after it.
+    func allowFromCard() {
+        let denied = permission == .denied
+        finish()
+        if denied {
+            if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+        } else {
+            Task {
+                _ = await HailbellPush.shared.requestPermission()
+                permission = await HailbellPush.shared.permission
+            }
         }
     }
 
