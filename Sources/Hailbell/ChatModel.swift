@@ -532,8 +532,12 @@ final class ChatModel: ObservableObject {
             break
         }
         guard event.type == "message", let message = event.message else { return }
+        // A message we already have, sent again: the team edited or deleted it. The copy is replaced
+        // and nothing counts as new.
+        let known = messages.contains { $0.id == message.id }
         insert(message)
         saveCache()
+        if known { return }
         if !message.isMine { agentTyping = false }
         if !message.isMine {
             if visible { markRead() } else { owner?.setUnread((owner?.unreadCount ?? 0) + 1) }

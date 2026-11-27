@@ -33,6 +33,9 @@ struct MessageRow: View {
                     Avatar(image: bundledPhoto, url: photo, size: 28, theme: theme).opacity(showsFace ? 1 : 0)
                 }
                 VStack(alignment: mine ? .trailing : .leading, spacing: 4) {
+                    if message.isDeleted {
+                        DeletedBubble()
+                    } else {
                     if let quote, quoteStandsAlone {
                         // As wide as the quote needs, up to the width of a photo.
                         BubbleStack {
@@ -49,9 +52,13 @@ struct MessageRow: View {
                         Bubble(text: message.body, mine: mine, theme: theme, quote: quote) { onQuote($0) }
                     }
                     if mine, message.report != nil { BugReportTag() }
+                    }
+                    if message.isEdited {
+                        Text(L10n.text("edited")).font(.caption2).foregroundStyle(.secondary).padding(.horizontal, 6)
+                    }
                 }
             }
-            .swipeToReply(enabled: canReply, theme: theme, copyText: message.body, onReply: onReply)
+            .swipeToReply(enabled: canReply && !message.isDeleted, theme: theme, copyText: message.isDeleted ? "" : message.body, onReply: onReply)
         }
         .frame(maxWidth: Self.maxWidth, alignment: mine ? .trailing : .leading)
         .frame(maxWidth: .infinity, alignment: mine ? .trailing : .leading)
@@ -73,6 +80,18 @@ struct MessageRow: View {
 
     /// Keeps lines readable on wide screens (an open iPhone Duo, iPad, landscape).
     static let maxWidth: CGFloat = 520
+}
+
+/// In place of a reply the team deleted: a quiet outlined line, with nothing to copy or answer.
+private struct DeletedBubble: View {
+    var body: some View {
+        Text(L10n.text("deleted"))
+            .font(.subheadline).italic()
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Color.primary.opacity(0.14), lineWidth: 1))
+    }
 }
 
 /// The AI's mark beside its replies: sparkles in an accent circle, so they never look like a person's.

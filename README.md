@@ -131,6 +131,10 @@ The dashboard shows them under the report, next to the customer's plan and purch
 
 A teammate can ask for a report from the dashboard (**Ask for bug report**), with `!bugreport` in Discord or Telegram, or with the **Ask for a bug report** button in Slack. The AI can add the same request to its reply when a customer describes a bug. In SDK 1.2.0 and later the message has a **Send a bug report** button that opens the report screen, where the user can also add a screenshot from their photos. Older SDKs show the message as text.
 
+## Edited and deleted replies
+
+Your team can edit or delete a reply after sending it (dashboard). The chat shows the new wording, with "Edited" under it when the customer had already read the old one, and "This message was deleted" in place of a deleted reply, in the customer's language. Both arrived in 1.4.0; earlier versions show the new wording without the label, and a deleted reply as that line in English. `Message.edited` and `Message.deleted` carry the two flags. Nothing to set up.
+
 ## Hailbell.push
 
 Hailbell's own push notifications, sent from the dashboard, the REST API or an AI agent over MCP:

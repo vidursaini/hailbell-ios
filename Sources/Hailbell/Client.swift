@@ -77,8 +77,16 @@ public struct Message: Codable, Identifiable, Equatable {
     /// ordinary messages, on servers that predate the card, and when the SDK can't read it (the
     /// message then shows its `body` as a normal bubble).
     public let expect: Expect?
+    /// True when the team changed this reply after the customer had read it: the chat says "Edited".
+    /// Nil on ordinary messages and on servers that predate editing.
+    public let edited: Bool?
+    /// True when the team deleted this reply: the chat shows a marker in its place, and `body` and
+    /// `attachments` no longer carry the message.
+    public let deleted: Bool?
 
     var isMine: Bool { author == "user" }
+    var isDeleted: Bool { deleted == true }
+    var isEdited: Bool { edited == true && !isDeleted }
 
     /// The reply time card to draw instead of a bubble, when this message is one this SDK understands.
     var expectCard: Expect? {
@@ -103,6 +111,8 @@ public struct Message: Codable, Identifiable, Equatable {
         replyTo = (try? c.decodeIfPresent(ReplyTo.self, forKey: .replyTo)) ?? nil
         // Same for the reply time card: a malformed one leaves the plain text.
         expect = (try? c.decodeIfPresent(Expect.self, forKey: .expect)) ?? nil
+        edited = (try? c.decodeIfPresent(Bool.self, forKey: .edited)) ?? nil
+        deleted = (try? c.decodeIfPresent(Bool.self, forKey: .deleted)) ?? nil
     }
 }
 
