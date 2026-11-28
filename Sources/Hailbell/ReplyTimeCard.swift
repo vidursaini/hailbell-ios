@@ -23,13 +23,13 @@ enum ReplyTime {
     }
 
     struct Words: Equatable {
-        /// "Vidur is offline right now" or "Vidur will reply here".
+        /// "Bello is offline right now" or "Bello will reply here".
         var title: String
         /// "Usually back by 11:30 PM tonight, your time. That's in about 8 hours."
         var line: String?
         /// The part of `line` shown in bold ("11:30 PM tonight").
         var bold: String?
-        /// "It's 2:22 AM for Vidur in India."
+        /// "It's 2:22 AM for Bello in India."
         var ownerTime: String?
     }
 
@@ -60,13 +60,18 @@ enum ReplyTime {
         }
         if let id = e.ownerZone, let country = e.ownerCountry, let ownerZone = TimeZone(identifier: id) {
             // The country in the card's language, so the sentence never mixes two.
-            let place = Locale(identifier: lang).localizedString(forRegionCode: country) ?? country
+            var place = Locale(identifier: lang).localizedString(forRegionCode: country) ?? country
+            if lang == "en", englishThe.contains(country) { place = "the " + place }
             w.ownerTime = t("expectOwnerTime", ["time": clock(now, locale: locale, zone: ownerZone), "name": e.name, "place": place])
         }
         return w
     }
 
     /// "11:30 PM tonight", "7:00 AM tomorrow", "9:00 AM on Monday": the reader's own day and clock.
+    /// Countries whose English name takes "the": "in the United States", "in the Netherlands". The other
+    /// languages' sentences put the country in brackets or need no article.
+    static let englishThe: Set<String> = ["US", "GB", "AE", "NL", "PH", "BS", "GM", "MV", "SC", "KM", "DO", "CF", "MH", "SB", "KY", "FK", "FO", "CK", "VG", "VI", "TC", "MP", "IM", "AX"]
+
     static func whenPhrase(_ at: Date, now: Date, lang: String, locale: Locale, zone: TimeZone) -> String {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = zone
@@ -218,11 +223,11 @@ private enum ReplyTimePreview {
     static let theme = ChatTheme(Appearance(), dark: false)
     static let darkTheme = ChatTheme(Appearance(), dark: true)
     static var back: Expect {
-        Expect(kind: "back", name: "Vidur", backAt: (Date().timeIntervalSince1970 + 8 * 3600) * 1000, notify: true,
-               ownerZone: "Asia/Kolkata", ownerCountry: "IN")
+        Expect(kind: "back", name: "Bello", backAt: (Date().timeIntervalSince1970 + 8 * 3600) * 1000, notify: true,
+               ownerZone: "America/New_York", ownerCountry: "US")
     }
-    static let typical = Expect(kind: "typical", name: "Vidur", hours: 3, notify: true)
-    static let soon = Expect(kind: "soon", name: "Vidur", notify: false)
+    static let typical = Expect(kind: "typical", name: "Bello", hours: 3, notify: true)
+    static let soon = Expect(kind: "soon", name: "Bello", notify: false)
 }
 
 #Preview("Back, with button") {

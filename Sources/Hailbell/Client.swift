@@ -121,7 +121,7 @@ public struct Message: Codable, Identifiable, Equatable {
 /// until `backAt`), "typical" (usually replies within `hours`) or "soon".
 public struct Expect: Codable, Equatable {
     public let kind: String
-    /// Who replies, e.g. "Vidur".
+    /// Who replies, e.g. "Bello".
     public let name: String
     /// When the team is back, in ms since 1970 (kind "back").
     public let backAt: Double?
@@ -129,7 +129,7 @@ public struct Expect: Codable, Equatable {
     public let hours: Int?
     /// Whether to offer a notification when they reply.
     public let notify: Bool
-    /// The owner's time zone and country, for "It's 2:22 AM for Vidur in India." Both or neither.
+    /// The owner's time zone and country, for "It's 2:22 AM for Bello in India." Both or neither.
     public let ownerZone: String?
     public let ownerCountry: String?
 

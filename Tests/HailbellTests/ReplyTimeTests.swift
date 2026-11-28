@@ -12,10 +12,10 @@ final class ReplyTimeTests: XCTestCase {
     // MARK: decoding
 
     func testACardDecodesItsDetailsAndKeepsThemOffline() throws {
-        let m = try decode(#"{"id":"m1","author":"system","body":"Vidur is offline right now. Usually back by…","createdAt":1,"expect":{"kind":"back","name":"Vidur","backAt":1764100000000,"notify":true,"ownerZone":"Asia/Kolkata","ownerCountry":"IN"}}"#)
+        let m = try decode(#"{"id":"m1","author":"system","body":"Bello is offline right now. Usually back by…","createdAt":1,"expect":{"kind":"back","name":"Bello","backAt":1764100000000,"notify":true,"ownerZone":"Asia/Kolkata","ownerCountry":"IN"}}"#)
         let e = try XCTUnwrap(m.expectCard)
         XCTAssertEqual(e.kind, "back")
-        XCTAssertEqual(e.name, "Vidur")
+        XCTAssertEqual(e.name, "Bello")
         XCTAssertEqual(e.backAt, 1764100000000)
         XCTAssertTrue(e.notify)
         XCTAssertEqual(e.ownerZone, "Asia/Kolkata")
@@ -24,7 +24,7 @@ final class ReplyTimeTests: XCTestCase {
         let again = try JSONDecoder().decode(Message.self, from: JSONEncoder().encode(m))
         XCTAssertEqual(again.expect, m.expect)
 
-        let typical = try decode(#"{"id":"m2","author":"system","body":"x","createdAt":1,"expect":{"kind":"typical","name":"Vidur","hours":3,"notify":false}}"#)
+        let typical = try decode(#"{"id":"m2","author":"system","body":"x","createdAt":1,"expect":{"kind":"typical","name":"Bello","hours":3,"notify":false}}"#)
         XCTAssertEqual(typical.expectCard?.hours, 3)
         XCTAssertEqual(typical.expectCard?.notify, false)
     }
@@ -36,18 +36,18 @@ final class ReplyTimeTests: XCTestCase {
         XCTAssertNil(plain.expectCard)
         // Malformed: the message still loads with its text.
         for odd in [#""soon""#, #"{"kind":3}"#, #"{"kind":"soon"}"#, #"[]"#, "null"] {
-            let m = try decode(#"{"id":"m2","author":"system","body":"Vidur will reply","createdAt":1,"expect":\#(odd)}"#)
+            let m = try decode(#"{"id":"m2","author":"system","body":"Bello will reply","createdAt":1,"expect":\#(odd)}"#)
             XCTAssertNil(m.expectCard, odd)
-            XCTAssertEqual(m.body, "Vidur will reply")
+            XCTAssertEqual(m.body, "Bello will reply")
         }
         // A kind this SDK doesn't know, or one missing what it needs.
-        XCTAssertNil(try decode(#"{"id":"m3","author":"system","body":"x","createdAt":1,"expect":{"kind":"later","name":"Vidur","notify":true}}"#).expectCard)
-        XCTAssertNil(try decode(#"{"id":"m4","author":"system","body":"x","createdAt":1,"expect":{"kind":"back","name":"Vidur","notify":true}}"#).expectCard)
-        XCTAssertNil(try decode(#"{"id":"m5","author":"system","body":"x","createdAt":1,"expect":{"kind":"typical","name":"Vidur"}}"#).expectCard)
+        XCTAssertNil(try decode(#"{"id":"m3","author":"system","body":"x","createdAt":1,"expect":{"kind":"later","name":"Bello","notify":true}}"#).expectCard)
+        XCTAssertNil(try decode(#"{"id":"m4","author":"system","body":"x","createdAt":1,"expect":{"kind":"back","name":"Bello","notify":true}}"#).expectCard)
+        XCTAssertNil(try decode(#"{"id":"m5","author":"system","body":"x","createdAt":1,"expect":{"kind":"typical","name":"Bello"}}"#).expectCard)
         // Only system messages become cards.
-        XCTAssertNil(try decode(#"{"id":"m6","author":"agent","body":"x","createdAt":1,"expect":{"kind":"soon","name":"Vidur","notify":true}}"#).expectCard)
+        XCTAssertNil(try decode(#"{"id":"m6","author":"agent","body":"x","createdAt":1,"expect":{"kind":"soon","name":"Bello","notify":true}}"#).expectCard)
         // A field of the wrong type is dropped, not fatal.
-        let loose = try decode(#"{"id":"m7","author":"system","body":"x","createdAt":1,"expect":{"kind":"soon","name":"Vidur","notify":"yes","ownerZone":5}}"#)
+        let loose = try decode(#"{"id":"m7","author":"system","body":"x","createdAt":1,"expect":{"kind":"soon","name":"Bello","notify":"yes","ownerZone":5}}"#)
         XCTAssertEqual(loose.expectCard?.notify, false)
         XCTAssertNil(loose.expectCard?.ownerZone)
     }
@@ -66,7 +66,7 @@ final class ReplyTimeTests: XCTestCase {
     }
 
     private func back(in hours: Double, notify: Bool = true) -> Expect {
-        Expect(kind: "back", name: "Vidur", backAt: (now.timeIntervalSince1970 + hours * 3600) * 1000, notify: notify)
+        Expect(kind: "back", name: "Bello", backAt: (now.timeIntervalSince1970 + hours * 3600) * 1000, notify: notify)
     }
 
     private func words(_ e: Expect, lang: String = "en", locale: Locale? = nil, at: Date? = nil) -> ReplyTime.Words {
@@ -114,32 +114,37 @@ final class ReplyTimeTests: XCTestCase {
     }
 
     func testTitlesAndThePastTime() {
-        XCTAssertEqual(words(back(in: 3)).title, "Vidur is offline right now")
+        XCTAssertEqual(words(back(in: 3)).title, "Bello is offline right now")
         // Back already: the title alone.
         let past = words(back(in: -1))
-        XCTAssertEqual(past.title, "Vidur is offline right now")
+        XCTAssertEqual(past.title, "Bello is offline right now")
         XCTAssertNil(past.line)
         XCTAssertNil(past.bold)
 
-        XCTAssertEqual(words(Expect(kind: "typical", name: "Vidur", hours: 3)),
-                       ReplyTime.Words(title: "Vidur will reply here", line: "At this time of day Vidur usually replies within 3 hours."))
-        XCTAssertEqual(words(Expect(kind: "typical", name: "Vidur", hours: 1)).line,
-                       "At this time of day Vidur usually replies within an hour.")
-        XCTAssertEqual(words(Expect(kind: "soon", name: "Vidur")),
-                       ReplyTime.Words(title: "Vidur will reply here", line: "Vidur will reply as soon as possible."))
+        XCTAssertEqual(words(Expect(kind: "typical", name: "Bello", hours: 3)),
+                       ReplyTime.Words(title: "Bello will reply here", line: "At this time of day Bello usually replies within 3 hours."))
+        XCTAssertEqual(words(Expect(kind: "typical", name: "Bello", hours: 1)).line,
+                       "At this time of day Bello usually replies within an hour.")
+        XCTAssertEqual(words(Expect(kind: "soon", name: "Bello")),
+                       ReplyTime.Words(title: "Bello will reply here", line: "Bello will reply as soon as possible."))
         // Japanese runs its sentences together.
         let ja = words(back(in: 3), lang: "ja").line ?? ""
         XCTAssertFalse(ja.contains("。 "), ja)
     }
 
     func testTheOwnersTime() {
-        let e = Expect(kind: "soon", name: "Vidur", ownerZone: "Asia/Kolkata", ownerCountry: "IN")
+        let e = Expect(kind: "soon", name: "Bello", ownerZone: "Asia/Kolkata", ownerCountry: "IN")
         // 15:00 in London is 20:30 in India.
-        XCTAssertEqual(words(e).ownerTime, "It’s 20:30 for Vidur in India.")
-        XCTAssertEqual(words(e, lang: "de").ownerTime, "Bei Vidur in Indien ist es 20:30.")
+        XCTAssertEqual(words(e).ownerTime, "It’s 20:30 for Bello in India.")
+        XCTAssertEqual(words(e, lang: "de").ownerTime, "Bei Bello (Indien) ist es 20:30.")
+        // English adds "the" where the country's name needs it.
+        let us = Expect(kind: "soon", name: "Bello", ownerZone: "Asia/Kolkata", ownerCountry: "US")
+        XCTAssertEqual(words(us).ownerTime, "It’s 20:30 for Bello in the United States.")
+        XCTAssertEqual(words(Expect(kind: "soon", name: "Bello", ownerZone: "Asia/Kolkata", ownerCountry: "NL")).ownerTime, "It’s 20:30 for Bello in the Netherlands.")
+        XCTAssertEqual(words(us, lang: "es").ownerTime, "Son las 20:30 para Bello en Estados Unidos.")
         // Both parts or none.
-        XCTAssertNil(words(Expect(kind: "soon", name: "Vidur", ownerZone: "Asia/Kolkata")).ownerTime)
-        XCTAssertNil(words(Expect(kind: "soon", name: "Vidur", ownerZone: "Mars/Base", ownerCountry: "IN")).ownerTime)
+        XCTAssertNil(words(Expect(kind: "soon", name: "Bello", ownerZone: "Asia/Kolkata")).ownerTime)
+        XCTAssertNil(words(Expect(kind: "soon", name: "Bello", ownerZone: "Mars/Base", ownerCountry: "IN")).ownerTime)
     }
 
     func testEveryLanguageHasEveryKey() {
@@ -148,7 +153,7 @@ final class ReplyTimeTests: XCTestCase {
         XCTAssertEqual(L10n.replyTimeTable.count, 14)
         for (lang, table) in L10n.replyTimeTable { XCTAssertEqual(Set(table.keys), keys, lang) }
         // The owner-approved English.
-        XCTAssertEqual(L10n.text("expectNotify", ["name": "Vidur"], lang: "en"), "Notify me when Vidur replies")
+        XCTAssertEqual(L10n.text("expectNotify", ["name": "Bello"], lang: "en"), "Notify me when Bello replies")
     }
 
     // MARK: notify part

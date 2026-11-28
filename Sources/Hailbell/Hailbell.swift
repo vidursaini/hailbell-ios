@@ -165,7 +165,7 @@ public final class Hailbell: ObservableObject {
 
     /// This SDK's version. Sent with each session, so Hailbell knows the chat can show the button of a
     /// bug report request.
-    public nonisolated static let sdkVersion = "1.4.0"
+    public nonisolated static let sdkVersion = "1.4.1"
 
     /// Records a signal such as "paywall_decline". Signals show next to the chat and drive nudges later.
     public static func track(_ event: String, properties: [String: String] = [:]) {

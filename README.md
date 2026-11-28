@@ -61,7 +61,7 @@ func application(_ app: UIApplication, didRegisterForRemoteNotificationsWithDevi
 
 4. On sign-out call `Hailbell.reset()`. When a user deletes their account, call `try await Hailbell.deleteData()`.
 
-When the AI hands a chat to you while nobody is around, the chat shows a reply time card instead of a plain message: "Vidur is offline right now. Usually back by **11:30 PM tonight**, your time.", worked out on the phone in the customer's own time zone and clock format, with a "Notify me when Vidur replies" button that turns on notifications. Turn it on or off in the dashboard's AI replies settings. Older SDK versions show the same words as a normal message.
+When the AI hands a chat to you while nobody is around, the chat shows a reply time card instead of a plain message: "Bello is offline right now. Usually back by **11:30 PM tonight**, your time.", worked out on the phone in the customer's own time zone and clock format, with a "Notify me when Bello replies" button that turns on notifications. Turn it on or off in the dashboard's AI replies settings. Older SDK versions show the same words as a normal message.
 
 The full guide, with entry points, signed-in users, offers, App Store privacy answers and a checklist, is at [hailbell.com/docs](https://hailbell.com/docs). AI coding agents can install the Hailbell skill from `https://hailbell.com/skills/hailbell/SKILL.md`.
 

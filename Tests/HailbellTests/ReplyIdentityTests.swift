@@ -5,7 +5,7 @@ import XCTest
 /// fills in while the chat hasn't heard otherwise, and each reply shows its own teammate's photo.
 final class ReplyIdentityTests: XCTestCase {
     private func team(_ avatar: String? = nil, photo: Bool? = nil, profile: Bool? = nil) -> [TeamMember] {
-        [TeamMember(name: "Vidur", avatarUrl: avatar, photo: photo, profilePhoto: profile)]
+        [TeamMember(name: "Bello", avatarUrl: avatar, photo: photo, profilePhoto: profile)]
     }
 
     func testBundledPhotoShowsOnlyWhenTheServerHasNoOtherAnswer() {
@@ -31,7 +31,7 @@ final class ReplyIdentityTests: XCTestCase {
         let cached = try JSONDecoder().decode(Message.self, from: Data(#"{"id":"m0","author":"agent","body":"hi","attachments":[],"createdAt":0}"#.utf8))
         XCTAssertNil(cached.authorAvatarUrl)
         // A snapshot written by an older version has no photo flag.
-        let member = try JSONDecoder().decode(TeamMember.self, from: Data(#"{"name":"Vidur","avatarUrl":null}"#.utf8))
+        let member = try JSONDecoder().decode(TeamMember.self, from: Data(#"{"name":"Bello","avatarUrl":null}"#.utf8))
         XCTAssertNil(member.photo)
         // Round trip through the offline copy keeps the photo.
         let again = try JSONDecoder().decode(Message.self, from: JSONEncoder().encode(fresh))
